@@ -8,6 +8,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 
@@ -107,10 +108,14 @@ public class OkHttpMainActivity extends AppCompatActivity implements View.OnClic
          */
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
-                loadingProgressBar.setVisibility(View.GONE);
-                getLondonCurrentWeatherLinearLayout.setVisibility(View.VISIBLE);
-                pressureTextView.setText("Request is failed");
+            public void onFailure(Call call, final IOException e) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        loadingProgressBar.setVisibility(View.GONE);
+                        Toast.makeText(OkHttpMainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
 
             @Override
@@ -150,14 +155,17 @@ public class OkHttpMainActivity extends AppCompatActivity implements View.OnClic
 
     /**
      * updateUI() method will be used once a successive response is returned from OpenWeatherMap API
+     *
      * @param weatherDataBean that is returned from successive OpenWeatherMap API request
      */
     private void updateUI(WeatherDataBean weatherDataBean) {
         loadingProgressBar.setVisibility(View.GONE);
-        getLondonCurrentWeatherLinearLayout.setVisibility(View.VISIBLE);
-        temperatureTextView.setText("Temperature : " + weatherDataBean.getMain().getTemp() + " Celsius");
-        pressureTextView.setText("Pressure : " + weatherDataBean.getMain().getPressure());
-        humidityTextView.setText("Humidity : " + weatherDataBean.getMain().getHumidity());
+        if (weatherDataBean != null) {
+            getLondonCurrentWeatherLinearLayout.setVisibility(View.VISIBLE);
+            temperatureTextView.setText("Temperature : " + weatherDataBean.getMain().getTemp() + " Celsius");
+            pressureTextView.setText("Pressure : " + weatherDataBean.getMain().getPressure());
+            humidityTextView.setText("Humidity : " + weatherDataBean.getMain().getHumidity());
+        }
     }
 
     private class GetWeatherSync extends AsyncTask<Void, Void, WeatherDataBean> {
@@ -191,8 +199,13 @@ public class OkHttpMainActivity extends AppCompatActivity implements View.OnClic
                 JSONObject jsonObject = new JSONObject(responseString);
                 Gson gson = new Gson();
                 weatherDataBean = gson.fromJson(jsonObject.toString(), WeatherDataBean.class);
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (final IOException e) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(OkHttpMainActivity.this,e.getMessage(),Toast.LENGTH_SHORT).show();
+                    }
+                });
             } catch (JSONException e) {
                 e.printStackTrace();
             }
